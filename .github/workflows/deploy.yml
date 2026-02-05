@@ -1,0 +1,51 @@
+name: Build and Deploy Go API
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build and Push Image
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/devex-calculator:latest
+          docker build -t $IMAGE_ID .
+          docker push $IMAGE_ID
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: deploy
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            mkdir -p ~/apps/devex-calculator
+            cd ~/apps/devex-calculator
+
+            # Create a localized docker-compose file
+            cat <<EOF > docker-compose.yml
+            services:
+              devex-calculator:
+                image: ghcr.io/${{ github.repository_owner }}/devex-calculator:latest
+                container_name: devex-calculator
+                restart: always
+                networks:
+                  - web-proxy
+            networks:
+              web-proxy:
+                external: true
+            EOF
+
+            docker compose pull
+            docker compose up -d
+            docker image prune -f

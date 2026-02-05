@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Devex Calculator</title>
+
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: linear-gradient(135deg, #171717, #171717);
+        height: 100vh;
+        margin: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+      }
+
+      .card {
+        background: linear-gradient(135deg, #171717, #171717);
+        padding: 40px;
+        width: 380px;
+        box-shadow: 0 0px 50px rgba(0, 0, 0, 0.45);
+
+        border-radius: 20px;
+
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      h1 {
+        text-align: center;
+        margin: 0;
+        font-size: 26px;
+      }
+
+      .rate {
+        text-align: center;
+        font-size: 13px;
+        opacity: 0.85;
+      }
+
+      .row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      label {
+        font-size: 13px;
+        opacity: 0.9;
+      }
+
+      input {
+        padding: 14px;
+        border-radius: 12px;
+        border: none;
+        font-size: 17px;
+        outline: none;
+        text-align: center;
+      }
+
+      input:focus {
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+      }
+
+      .equals {
+        text-align: center;
+        font-size: 20px;
+        opacity: 0.8;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .footer {
+        text-align: center;
+        font-size: 12px;
+        opacity: 0.7;
+        margin-top: 6px;
+      }
+      /* Chrome, Safari, Edge, Opera */
+      input::-webkit-outer-spin-button,
+      input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      /* Firefox */
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="card">
+      <h1>Devex Calculator</h1>
+      <div class="rate">DevEx rate: ${{.Rate}} per Robux</div>
+
+      <div class="row">
+        <label>Robux</label>
+        <input id="robux" type="number" step="0" placeholder="0" />
+      </div>
+
+      <div class="equals">⇅</div>
+
+      <div class="row">
+        <label>USD</label>
+        <input id="usd" type="number" step="0" placeholder="0.00" />
+      </div>
+
+      <div class="footer">live conversion • no refresh</div>
+    </div>
+
+    <script>
+      const robuxInput = document.getElementById("robux");
+      const usdInput = document.getElementById("usd");
+
+      let typing = null;
+
+      async function convert(params, updateField) {
+        const res = await fetch("/api/convert?" + params);
+        const data = await res.json();
+
+        // only update the OTHER field
+        if (updateField === "usd") {
+          usdInput.value = data.usd.toFixed(2);
+        }
+        if (updateField === "robux") {
+          robuxInput.value = Math.round(data.robux);
+        }
+      }
+
+      robuxInput.addEventListener("input", (e) => {
+        typing = "robux";
+        if (!e.target.value) return (usdInput.value = "");
+        convert("robux=" + e.target.value, "usd");
+      });
+
+      usdInput.addEventListener("input", (e) => {
+        typing = "usd";
+        if (!e.target.value) return (robuxInput.value = "");
+        convert("usd=" + e.target.value, "robux");
+      });
+    </script>
+  </body>
+</html>
